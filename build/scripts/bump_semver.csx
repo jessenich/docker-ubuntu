@@ -1,6 +1,8 @@
+#!/usr/bin/env dotnet-script
+
 #nullable enable
 
-// #r "nuget: Newtonsoft.Json, 12.0.3"
+// #r "nuget: System.Text.RegularExpressions"
 
 using System.Buffers;
 using System.Threading;
@@ -24,15 +26,23 @@ public class SemanticVersionEventArgs {
 }
 
 public class SemanticVersion  {
-    public string Prefix { get; internal set; } = "v";
+    public string? Prefix { get; internal set; }
     public string Major { get; internal set; } = "1";
     public string? Minor { get; internal set; }
     public string? Patch { get; internal set; }
-    public string Postfix { get; internal set; } = string.Empty;
+    public string? Postfix { get; internal set; } = string.Empty;
     public bool? IsPrerelease { get; internal set; } = false;
 
-    public override string ToString() => $"{this.Prefix}{this.Major}.{this.Minor}.{this.Patch}" +
-                                         $"{(string.IsNullOrWhiteSpace(this.Postfix) ? string.Empty : "-" + this.Postfix)}";
+    public override string ToString() => new StringBuilder()
+        .Append(this.Prefix)
+        .Append(this.Major)
+        .Append(".")
+        .Append(this.Minor)
+        .Append(".")
+        .Append(this.Patch)
+        .Append("-")
+        .Append(this.Postfix)
+        .ToString();
 }
 
 public interface IVersionRepository {
@@ -49,11 +59,11 @@ public interface IVersionRepository {
     ValueTask<SemanticVersion> Set(string major, string? minor, string? patch, bool? prerelease = null);
 }
 
-public class VersionPerFile {
+public sealed class DotEnvSemver {
     public string Path { get; }
     public SemanticVersion Version { get; }
 
-    private VersionPerFile(string path, SemanticVersion version) {
+    private DotEnvSemver(string path, SemanticVersion version) {
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentNullException(nameof(path));
 
@@ -61,10 +71,10 @@ public class VersionPerFile {
             throw new FileNotFoundException("File not found.", path);
 
         this.Path = path;
-        this.Version = version ;
+        this.Version = version;
     }
 
-    public static async Task<SemanticVersion> ReadVersion(string path, CancellationToken cancellationToken = default) {
+    public static async Task<DotEnvSemver> ReadVersion(string path, CancellationToken cancellationToken = default) {
         if (string.IsNullOrWhiteSpace(path))
             throw new ArgumentNullException(nameof(path));
 
@@ -72,7 +82,7 @@ public class VersionPerFile {
             throw new FileNotFoundException("File not found.", path);
 
         var contents = await File.ReadAllLinesAsync(path, cancellationToken);
-        contents
+        var version = contents
             .Where(x => !x.StartsWith('#'))
             .Select(x => {
                 var commentStartIdx = x.IndexOf('#', StringComparison.OrdinalIgnoreCase);
@@ -82,8 +92,38 @@ public class VersionPerFile {
                     return x.Substring(0, commentStartIdx + 1);
             })
             .Select(x => {
-                var semantics = x.Split('.', StringComparison.OrdinalIgnoreCase);
-                var prefix = 
-            });
+                var semantics = x.Split('.');
+                if (semantics.Length < 3)
+                    throw new IndexOutOfRangeException("Invalid semver");
+
+                var dotSplitLeft = semantics[0];
+                var dotSplitMiddle = semantics[1];
+                var dotSplitRight = semantics[2];
+
+                var prefix = dotSplitLeft.TakeWhile(c => char.IsLetter(c))?.ToString();
+                var major = semantics[0].Skip(prefix?.Length ?? 0)?.ToString() ?? "1";
+                var minor = semantics[1] ?? "0";
+                var patch = semantics[2]?.TakeWhile(c => char.IsDigit(c))?.ToString() ?? "0";
+                var postfix = (semantics[2]?.Any(c => !char.IsDigit(c)) ?? false) ?
+                    semantics[2].Split(semantics[2].First(c => !char.IsDigit(c))).FirstOrDefault() :
+                    null;
+
+                return new SemanticVersion() {
+                    Prefix = prefix,
+                    Major = major,
+                    Minor = minor,
+                    Patch = patch,
+                    Postfix = postfix
+                };
+            }).LastOrDefault();
+
+        var prereleaseIndicators = new[] { "alpha", "beta", "rc", "prerelease" };
+        foreach (var indicator in prereleaseIndicators) {
+            if (version?.Postfix?.Contains(indicator) ?? false)
+                version.IsPrerelease = true;
+        }
+
+        return new DotEnvSemver(path, version);
     }
+
 }

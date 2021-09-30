@@ -36,6 +36,18 @@ include $(DOCKER_DIR)/server-ref/server-ref.mk
 $(info Importing $(BUILD_DIR)...)
 include $(BUILD_DIR)/build/mk
 
-.PHONY: bump-semver-patch
-$(echo "$(shell git ) | grep -oP 'refs/tags/\K(.+)')"
+LAST_TAG = $(echo "$(shell git) | grep -oP 'refs/tags/\K(.+)')"
+
+## 1 - Major, Minor, Patch, or Prerelease.
+## 2 - Increment by how many?
+## 3 - Force override any existing images or tags
+INCREMENT_CMD = dotnet script $(BUILD_SCRIPTS_DIR)bump_semver.csx -- --increment $(2:-"1") --$(1:-"patch") $(3:="false")
+
+.PHONY: init bump-semver-patch
+
+init:
+	@dotnet script $(BUILD_SCRIPTS_DIR)bump_semver.csx -- --ini
+
 bump-semver-path:
+	$(shell $(call INCREMENT_CMD,patch,1,false))
+	

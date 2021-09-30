@@ -49,3 +49,7 @@ get-docker-tag-args() {
 -t ${ghcr_library}/${image_name}:${semver_tag}
 EOF
 }
+
+bump-semver() {
+    
+}
