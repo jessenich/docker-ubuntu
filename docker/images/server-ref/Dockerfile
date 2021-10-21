@@ -6,6 +6,10 @@ LABEL maintainer="Jesse N. <jesse@keplerdev.com" \
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y ubuntu-server
+    apt-get install -y \
+        zsh \
+        zshdb \
+        zsh-doc \
+        ubuntu-server
 
 CMD "/bin/bash -c"
