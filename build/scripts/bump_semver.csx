@@ -1,9 +1,21 @@
 #nullable enable
 
-// #r "nuget: Newtonsoft.Json, 12.0.3"
+#r "nuget: System.Text.Json, 6.0.0"
+#r "nuget: System.Text.Json.Serialization, 6.0.0"
 
+namespace SemverScript.Bump;
+
+using Microsoft.VisualBasic.CompilerServices;
+
+using System;
 using System.Buffers;
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
 public enum RepositoryType {
     File,
@@ -24,15 +36,36 @@ public class SemanticVersionEventArgs {
 }
 
 public class SemanticVersion  {
+    private Regex regex = new Regex("[^a-zA-Z]");
+
     public string Prefix { get; internal set; } = "v";
     public string Major { get; internal set; } = "1";
     public string? Minor { get; internal set; }
     public string? Patch { get; internal set; }
     public string Postfix { get; internal set; } = string.Empty;
-    public bool? IsPrerelease { get; internal set; } = false;
+    public bool? IsPrerelease => !string.IsNullOrWhiteSpace(this.Postfix) && new string[] { "alpha", "beta", "rc", "prerelease", "preview", "pr" }.Contains(this.regex.Replace(this.Postfix.ToLowerInvariant(), string.Empty);
+
+    public operator string() {
+        var sb = new StringBuilder();
+        sb.Append(this.Prefix);
+        sb.Append(this.Major);
+        if (!string.IsNullOrWhiteSpace(this.Minor)) {
+            sb.Append('.');
+            sb.Append(this.Minor);
+        }
+        if (!string.IsNullOrWhiteSpace(this.Patch)) {
+            sb.Append('.');
+        }
+    }
+
+    private string PostfixToString() {
+        $"{(string.IsNullOrWhiteSpace(this.Postfix) ?
+            string.Empty :
+            $"-{this.Postfix}";
+    }
 
     public override string ToString() => $"{this.Prefix}{this.Major}.{this.Minor}.{this.Patch}" +
-                                         $"{(string.IsNullOrWhiteSpace(this.Postfix) ? string.Empty : "-" + this.Postfix)}";
+
 }
 
 public interface IVersionRepository {
@@ -83,7 +116,7 @@ public class VersionPerFile {
             })
             .Select(x => {
                 var semantics = x.Split('.', StringComparison.OrdinalIgnoreCase);
-                var prefix = 
+                var prefix =
             });
     }
 }
