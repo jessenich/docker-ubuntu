@@ -1,11 +1,16 @@
 ARG VARIANT="21.04"
-FROM ubuntu:"$VARIANT"
-LABEL maintainer="Jesse N. <jesse@keplerdev.com" \
+FROM ubuntu:"$VARIANT" as serverref
+
+LABEL maintainer="cykuryx@outlook.com" \
       org.opencontainers.image.source="https://github.com/jessenich/docker-ubuntu"
-      
-ENV DEBIAN_FRONTEND=noninteractive
+
+ENV DEBIAN_NONINTERACTIVE true
 
 RUN apt-get update && \
-    apt-get install -y ubuntu-server
+    apt-get install -y --no-install-recommends ubuntu-server
 
-CMD "/bin/bash -c"
+FROM serverref
+
+RUN unminimize && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends man-db

@@ -50,4 +50,4 @@ init:
 
 bump-semver-path:
 	$(shell $(call INCREMENT_CMD,patch,1,false))
-	
+

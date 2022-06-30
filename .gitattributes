@@ -4,25 +4,28 @@
 # whitespace=trailing-space   = do not allow trailing spaces
 
 # Force all line endings to be \n
-* text=auto
+* text=auto     eol=lf
+* crlf		    text
+* -crlf		    -text
+* crlf=input	eol=lf
 * whitespace=space-before-tab,tab-in-indent,trailing-space,tab
 
 # Whitespace (exclusions)
 .gitmodules       -whitespace
 
 *.bash            text  whitespace  eol=lf
-*.cs              text  whitespace  diff=csharp  eol=lf
-*.csx             text  whitespace  diff=csharp  eol=lf
+*.cs              text  whitespace  eol=lf          diff=csharp
+*.csx             text  whitespace  eol=lf          diff=csharp
 *.dockerignore    text  whitespace  eol=lf
-*.js              text
-*.json            text
+*.js              text  whitespace  eol=lf
+*.json            text  whitespace  eol=lf
 *.mk              text  whitespace  eol=lf
 *.sh              text  whitespace  eol=lf
-*.sql             text
-*.svg             text  whitespace  diff=html
-*.ts              text
-*.tsx             text
-*.xml             text
+*.sql             text  whitespace  eol=lf
+*.svg             text  whitespace  eol=lf          diff=html
+*.ts              text  whitespace  eol=lf
+*.tsx             text  whitespace  eol=lf
+*.xml             text  whitespace  eol=lf          diff=html
 *Dockerfile*      text  whitespace  eol=lf
 Makefile*         text  whitespace  eol=lf
 
